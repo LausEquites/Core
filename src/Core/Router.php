@@ -40,6 +40,8 @@ class Router
 
         $lastElement = $xml;
         $parents = [];
+        $routerParamNames = [];
+        $routerParams = [];
         foreach (explode('/', $uri) as $part) {
             if (!$part) {
                 continue;
@@ -47,15 +49,20 @@ class Router
             if ($lastElement->$part) {
                 $parents[] = $lastElement;
                 $lastElement = $lastElement->$part;
+                $routerParamNames = $lastElement->attributes()->params?
+                    explode(",", $lastElement->attributes()->params) : [];
+            } elseif ($routerParamNames) {
+                $currentParam = array_shift($routerParamNames);
+                $routerParams[$currentParam] = $part;
             } else {
                 throw new \Exception("404 - $part not found in $uri");
             }
         }
 
-
         $controllerName = $this->namespace . "\\". ucfirst($lastElement->getName());
         /** @var Controller $controller */
         $controller = new $controllerName;
+        $controller->setRouterParameters($routerParams);
 
         echo $controller->serve();
     }
