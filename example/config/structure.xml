@@ -2,5 +2,6 @@
 <root>
     <test>
         <foo></foo>
+        <json></json>
     </test>
 </root>

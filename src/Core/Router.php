@@ -53,7 +53,7 @@ class Router
         }
 
 
-        $controllerName = $this->namespace . "\\". $lastElement->getName();
+        $controllerName = $this->namespace . "\\". ucfirst($lastElement->getName());
         /** @var Controller $controller */
         $controller = new $controllerName;
 
