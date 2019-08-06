@@ -1,4 +1,15 @@
 {
+  "name": "LausEquites/core",
+  "description": "Core framework",
+  "authors": [
+    {
+      "name": "Laus Brandt"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=7.1.0"
+  },
   "autoload": {
     "psr-4": {"Core\\": "src/Core"}
   }
