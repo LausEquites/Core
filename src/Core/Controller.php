@@ -4,6 +4,8 @@
 namespace Core;
 
 
+use Core\Exceptions\External;
+
 class Controller
 {
     private $parameters;
@@ -20,7 +22,7 @@ class Controller
         if (method_exists($this, $method)) {
             return $this->$method();
         } else {
-            throw new \Exception("Not implemented - $method");
+            throw new External("Not implemented - $method", 501);
         }
     }
 
