@@ -34,7 +34,7 @@ class Router
 
     public function run()
     {
-        $xmlstr = file_get_contents(getcwd() . "/" . $this->structureXmlPath);
+        $xmlstr = file_get_contents($this->structureXmlPath);
         $xml = new \SimpleXMLElement($xmlstr);
         $uri = $_SERVER['REQUEST_URI'];
 
