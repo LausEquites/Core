@@ -36,7 +36,7 @@ class Router
     {
         $xmlstr = file_get_contents($this->structureXmlPath);
         $xml = new \SimpleXMLElement($xmlstr);
-        $uri = $_SERVER['REQUEST_URI'];
+        list($uri) = explode('?',$_SERVER['REQUEST_URI']);
 
         $lastElement = $xml;
         $parents = [];
