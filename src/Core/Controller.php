@@ -10,13 +10,14 @@ class Controller
 {
     private $parameters;
     private $routerParameters;
+    private $ownRouterParameters;
 
     public function serve()
     {
         $this->loadParameters();
 
         $method = $_SERVER['REQUEST_METHOD'];
-        if ($this->routerParameters) {
+        if ($this->ownRouterParameters) {
             $method .= "_PARAMS";
         }
         if (method_exists($this, $method)) {
@@ -68,5 +69,27 @@ class Controller
     public function setRouterParameters($params)
     {
         $this->routerParameters = $params;
+    }
+
+    /** Get own router parameter names
+     *
+     * @return string[]|null
+     */
+    public function getOwnRouterParameters()
+    {
+        $params = [];
+        foreach ($this->ownRouterParameters as $name) {
+            $params[$name] = $this->routerParameters[$name];
+        }
+        return $params;
+    }
+
+    /** Set own router parameter names
+     *
+     * @param string[] $parameters
+     */
+    public function setOwnRouterParameters($parameters)
+    {
+        $this->ownRouterParameters = $parameters;
     }
 }
