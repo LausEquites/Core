@@ -54,6 +54,7 @@ class Router
             } elseif ($routerParamNames) {
                 $currentParam = array_shift($routerParamNames);
                 $routerParams[$currentParam] = $part;
+                $routerParamsByController[$lastElement->getName()][$currentParam] = $part;
             } else {
                 throw new \Exception("404 - $part not found in $uri");
             }
@@ -63,6 +64,9 @@ class Router
         /** @var Controller $controller */
         $controller = new $controllerName;
         $controller->setRouterParameters($routerParams);
+        if (isset($routerParamsByController[$lastElement->getName()])) {
+            $controller->setOwnRouterParameters($routerParamsByController[$lastElement->getName()]);
+        }
 
         echo $controller->serve();
     }
