@@ -19,10 +19,10 @@ class Json extends Controller
             $out = parent::serve();
         } catch(External $e) {
             http_response_code($e->getCode());
-            $out = $this->getErrorObject($e->getMessage());
+            $out = self::getErrorObject($e->getMessage());
         } catch(\Exception $e) {
             http_response_code(500);
-            $out = $this->getErrorObject($e->getMessage());
+            $out = self::getErrorObject($e->getMessage());
         }
 
         if (!is_string($out)) {
@@ -32,7 +32,7 @@ class Json extends Controller
         return $out;
     }
 
-    public function getErrorObject($error)
+    public static function getErrorObject($error)
     {
         $obj = new \stdClass();
         $obj->error = $error;

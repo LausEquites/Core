@@ -40,6 +40,7 @@ class Router
 
         $lastElement = $xml;
         $parents = [];
+        $parentControllerNames = [];
         $routerParamNames = [];
         $routerParams = [];
         foreach (explode('/', $uri) as $part) {
@@ -68,6 +69,17 @@ class Router
             $controller->setOwnRouterParameters($routerParamsByController[$lastElement->getName()]);
         }
 
+        foreach ($parents as $parentXML) {
+            $className = $this->namespace . "\\". ucfirst($parentXML->getName());
+            if (class_exists($className, true) && method_exists($className,'preServe')) {
+                $class = new $className;
+                $class->preServe();
+            }
+        }
+
+        if (method_exists($controller,'preServe')) {
+            $controller->preServe();
+        }
         echo $controller->serve();
     }
 }

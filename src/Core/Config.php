@@ -20,4 +20,19 @@ class Config
 
         return self::$config;
     }
+
+    /** Get a value from the config
+     *
+     * @param $key
+     * @return mixed
+     * @throws \Exception
+     */
+    public static function getKey($key)
+    {
+        if (!isset(self::$config->$key)) {
+            throw new \Exception("No config for '$key'");
+        }
+
+        return self::$config->$key;
+    }
 }
