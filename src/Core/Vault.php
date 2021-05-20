@@ -20,7 +20,7 @@ class Vault
 
     public function get($name)
     {
-        return $this->data[$name];
+        return $this->data[$name]?? null;
     }
 
     public function set($name, $value)
