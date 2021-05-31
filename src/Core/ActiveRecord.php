@@ -33,6 +33,49 @@ class ActiveRecord
     }
 
     /**
+     * @param $ids
+     * @return static[]
+     * @throws \Exception
+     */
+    protected static function getByIdMulti($ids)
+    {
+        $idCnt = count($ids);
+        $inData = str_repeat('?,',$idCnt);
+        $inData = mb_substr($inData,0, -1);
+
+        $sql = "SELECT * FROM " . self::$_table . " WHERE id IN($inData)";
+        $stmt = DB::get()->prepare($sql);
+        $stmt->execute($ids);
+
+        $objs = [];
+        while ($data = $stmt->fetch()) {
+            $objs[] = static::createFromArray($data);
+        }
+
+        return $objs;
+    }
+
+    /**
+     * @param $sql
+     * @param array $params
+     * @return static[]
+     * @throws \Exception
+     */
+    protected static function getBySql($sql, $params = [])
+    {
+        $objs = [];
+
+        $stmt = DB::get()->prepare($sql);
+        $stmt->execute($params);
+
+        while ($data = $stmt->fetch()) {
+            $objs[] = self::createFromArray($data);
+        }
+
+        return $objs;
+    }
+
+    /**
      * @param $data
      * @return static
      */
