@@ -4,9 +4,12 @@
 namespace Core;
 
 
+use Carbon\Carbon;
+
 class ActiveRecord
 {
     protected static $_table;
+    protected static $_typeMap;
     protected $_modified;
     protected $id;
 
@@ -84,6 +87,16 @@ class ActiveRecord
         $obj = new static();
         foreach ($data as $key => $value) {
             if (property_exists($obj, $key)) {
+                if (!empty(static::$_typeMap[$key])) {
+                    switch (static::$_typeMap[$key]) {
+                        case 'dt':
+                            if ($value !== null) {
+                                $value = Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC');
+                            }
+                            break;
+                    }
+                }
+
                 $obj->$key = $value;
             }
         }
@@ -119,7 +132,7 @@ class ActiveRecord
             $values = [];
             foreach ($updatedFields as $field) {
                 $fields[] = "$field=:$field";
-                $values[$field] = $this->$field;
+                $values[$field] = $this->$this->getConvertedValue($field);
             }
             $sql .= implode(',', $fields);
             $sql .= " WHERE id = :id";
@@ -130,13 +143,36 @@ class ActiveRecord
             $values = [];
             foreach ($updatedFields as $field) {
                 $placeholders[] = ":$field";
-                $values[$field] = $this->$field;
+                $values[$field] = $this->getConvertedValue($field);
             }
             $sql .= "(" . implode(',', $updatedFields) . ") ";
             $sql .= "VALUES (" . implode(',', $placeholders) . ")";
         }
 
         $stmt = $pdo->prepare($sql);
-        return $stmt->execute($values);
+        $suc = $stmt->execute($values);
+
+        if (!$this->id) {
+            $this->id = $pdo->lastInsertId();
+        }
+
+        return $suc;
+    }
+
+    private function getConvertedValue($field)
+    {
+        $value = $this->$field;
+        $converted = $value;
+        if (!empty(static::$_typeMap[$field])) {
+            switch (static::$_typeMap[$field]) {
+                case 'dt':
+                    if ($value !== null) {
+                        $converted = $value->format('Y-m-d H:i:s');
+                    }
+                    break;
+            }
+        }
+
+        return $converted;
     }
 }
