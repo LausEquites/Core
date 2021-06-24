@@ -132,7 +132,7 @@ class ActiveRecord
             $values = [];
             foreach ($updatedFields as $field) {
                 $fields[] = "$field=:$field";
-                $values[$field] = $this->$this->getConvertedValue($field);
+                $values[$field] = $this->getConvertedValue($field);
             }
             $sql .= implode(',', $fields);
             $sql .= " WHERE id = :id";
