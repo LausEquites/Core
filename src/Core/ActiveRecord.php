@@ -46,7 +46,7 @@ class ActiveRecord
         $inData = str_repeat('?,',$idCnt);
         $inData = mb_substr($inData,0, -1);
 
-        $sql = "SELECT * FROM " . self::$_table . " WHERE id IN($inData)";
+        $sql = "SELECT * FROM " . static::$_table . " WHERE id IN($inData)";
         $stmt = DB::get()->prepare($sql);
         $stmt->execute($ids);
 
@@ -86,7 +86,7 @@ class ActiveRecord
      */
     protected static function getBySqlSingle($sql, $params = [])
     {
-        $objs = self::getBySql($sql, $params);
+        $objs = static::getBySql($sql, $params);
 
         if (!$objs) {
             return false;
