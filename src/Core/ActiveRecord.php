@@ -79,6 +79,23 @@ class ActiveRecord
     }
 
     /**
+     * @param string $sql
+     * @param array $params
+     * @return static|false
+     * @throws \Exception
+     */
+    protected static function getBySqlSingle($sql, $params = [])
+    {
+        $objs = self::getBySql($sql, $params);
+
+        if (!$objs) {
+            return false;
+        }
+
+        return reset ($objs);
+    }
+
+    /**
      * @param $data
      * @return static
      */
