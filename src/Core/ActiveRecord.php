@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Core;
-
 
 use Carbon\Carbon;
 
@@ -104,14 +102,13 @@ class ActiveRecord
         $obj = new static();
         foreach ($data as $key => $value) {
             if (property_exists($obj, $key)) {
-                if (!empty(static::$_typeMap[$key])) {
-                    switch (static::$_typeMap[$key]) {
-                        case 'dt':
-                            if ($value !== null) {
-                                $value = Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC');
-                            }
-                            break;
-                    }
+                $type = static::$_typeMap[$key]?? null;
+                switch ($type) {
+                    case 'dt':
+                        if ($value !== null) {
+                            $value = Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC');
+                        }
+                        break;
                 }
 
                 $obj->$key = $value;
@@ -149,7 +146,7 @@ class ActiveRecord
             $values = [];
             foreach ($updatedFields as $field) {
                 $fields[] = "$field=:$field";
-                $values[$field] = $this->getConvertedValue($field);
+                $values[$field] = $this->$field;
             }
             $sql .= implode(',', $fields);
             $sql .= " WHERE id = :id";
@@ -160,14 +157,15 @@ class ActiveRecord
             $values = [];
             foreach ($updatedFields as $field) {
                 $placeholders[] = ":$field";
-                $values[$field] = $this->getConvertedValue($field);
+                $values[$field] =  $this->$field;
             }
             $sql .= "(" . implode(',', $updatedFields) . ") ";
             $sql .= "VALUES (" . implode(',', $placeholders) . ")";
         }
 
         $stmt = $pdo->prepare($sql);
-        $suc = $stmt->execute($values);
+        $this->bindParams($stmt, $values);
+        $suc = $stmt->execute();
 
         if (!$this->id) {
             $this->id = $pdo->lastInsertId();
@@ -176,20 +174,27 @@ class ActiveRecord
         return $suc;
     }
 
-    private function getConvertedValue($field)
+    private function bindParams($stmt, $values)
     {
-        $value = $this->$field;
-        $converted = $value;
-        if (!empty(static::$_typeMap[$field])) {
-            switch (static::$_typeMap[$field]) {
+        foreach ($values as $field => $value) {
+            $type = static::$_typeMap[$field]?? null;
+            switch ($type) {
+                case null:
+                    $stmt->bindValue(":$field", $value);
+                    break;
                 case 'dt':
                     if ($value !== null) {
-                        $converted = $value->format('Y-m-d H:i:s');
+                        $stmt->bindValue(":$field", $value->format('Y-m-d H:i:s'));
+                    } else {
+                        $stmt->bindValue(":$field", $value);
                     }
                     break;
+                case 'bit':
+                    $stmt->bindValue(":$field", (int)$value, \PDO::PARAM_INT);
+                    break;
+                default:
+                    throw new \Exception("Unknown field type " . static::$_typeMap[$field] . " for $field");
             }
         }
-
-        return $converted;
     }
 }
