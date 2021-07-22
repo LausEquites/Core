@@ -41,45 +41,47 @@ class Router
         $lastElement = $xml;
         $parents = [];
         $parentControllerNames = [];
+        $controllers = [];
         $routerParamNames = [];
         $routerParams = [];
+        $namespace = $this->namespace;
         foreach (explode('/', $uri) as $part) {
             if (!$part) {
                 continue;
             }
             if ($lastElement->$part) {
                 $parents[] = $lastElement;
+                $fullClassName = $namespace . "\\" . ucfirst($lastElement->$part->getName());
+                if (class_exists($fullClassName, true)) {
+                    $controllers[] = new $fullClassName;
+                }
+
                 $lastElement = $lastElement->$part;
-                $routerParamNames = $lastElement->attributes()->params?
+                $attributes = $lastElement->attributes();
+                $routerParamNames = $attributes->params?
                     explode(",", $lastElement->attributes()->params) : [];
+                if ($attributes->{"child-ns"}) {
+                    $namespace .= "\\" . $attributes->{"child-ns"};
+                }
             } elseif ($routerParamNames) {
+                // Handle parameters
                 $currentParam = array_shift($routerParamNames);
                 $routerParams[$currentParam] = $part;
-                $routerParamsByController[$lastElement->getName()][$currentParam] = $part;
+                $routerParamsByController[$fullClassName][$currentParam] = $part;
             } else {
                 throw new \Exception("404 - $part not found in $uri");
             }
         }
 
-        $controllerName = $this->namespace . "\\". ucfirst($lastElement->getName());
-        /** @var Controller $controller */
-        $controller = new $controllerName;
-        $controller->setRouterParameters($routerParams);
-        if (isset($routerParamsByController[$lastElement->getName()])) {
-            $controller->setOwnRouterParameters($routerParamsByController[$lastElement->getName()]);
-        }
-
-        foreach ($parents as $parentXML) {
-            $className = $this->namespace . "\\". ucfirst($parentXML->getName());
-            if (class_exists($className, true) && method_exists($className,'preServe')) {
-                $class = new $className;
-                $class->preServe();
+        foreach ($controllers as $controller) {
+            $controller->setRouterParameters($routerParams);
+            $ownParams = $routerParamsByController[$controller::class]?? [];
+            $controller->setOwnRouterParameters($ownParams);
+            if (method_exists($controller,'preServe')) {
+                $controller->preServe();
             }
         }
 
-        if (method_exists($controller,'preServe')) {
-            $controller->preServe();
-        }
         echo $controller->serve();
     }
 }
