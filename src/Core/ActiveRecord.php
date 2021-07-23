@@ -177,6 +177,9 @@ class ActiveRecord
     private function bindParams($stmt, $values)
     {
         foreach ($values as $field => $value) {
+            if (is_bool($value)) {
+                $value = (int) $value;
+            }
             $type = static::$_typeMap[$field]?? null;
             switch ($type) {
                 case null:
