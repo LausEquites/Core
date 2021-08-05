@@ -138,6 +138,10 @@ class ActiveRecord
      */
     protected function save()
     {
+        if (!$this->_modified) {
+            return true;
+        }
+
         $pdo = DB::get();
         $updatedFields = array_keys($this->_modified);
         if ($this->id) {
