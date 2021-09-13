@@ -3,6 +3,7 @@
 namespace Core;
 
 use Carbon\Carbon;
+use Core\Exceptions\External;
 
 class ActiveRecord
 {
@@ -109,6 +110,11 @@ class ActiveRecord
                             $value = Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC');
                         }
                         break;
+                    case 'json':
+                        if ($value !== null) {
+                            $value = json_decode($value);
+                        }
+                        break;
                 }
 
                 $obj->$key = $value;
@@ -198,6 +204,13 @@ class ActiveRecord
                     break;
                 case 'bit':
                     $stmt->bindValue(":$field", (int)$value, \PDO::PARAM_INT);
+                    break;
+                case 'json':
+                    $value = json_encode($value);
+                    if ($value === false) {
+                        throw new External("Error converting $field to json", 500);
+                    }
+                    $stmt->bindValue(":$field", $value);
                     break;
                 default:
                     throw new \Exception("Unknown field type " . static::$_typeMap[$field] . " for $field");
