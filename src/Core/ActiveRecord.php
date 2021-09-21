@@ -197,6 +197,7 @@ class ActiveRecord
                     break;
                 case 'dt':
                     if ($value !== null) {
+                        $value->setTimezone('UTC');
                         $stmt->bindValue(":$field", $value->format('Y-m-d H:i:s'));
                     } else {
                         $stmt->bindValue(":$field", $value);
