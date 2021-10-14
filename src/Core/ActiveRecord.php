@@ -19,7 +19,7 @@ class ActiveRecord
      */
     protected static function getById($id)
     {
-        $sql = "SELECT * FROM " . static::$_table . " WHERE id = :id";
+        $sql = "SELECT * FROM `" . static::$_table . "` WHERE id = :id";
         $pdo = DB::get();
         $stmt = $pdo->prepare($sql);
 
@@ -41,11 +41,15 @@ class ActiveRecord
      */
     protected static function getByIdMulti($ids)
     {
+        if (!$ids) {
+            return [];
+        }
+
         $idCnt = count($ids);
         $inData = str_repeat('?,',$idCnt);
         $inData = mb_substr($inData,0, -1);
 
-        $sql = "SELECT * FROM " . static::$_table . " WHERE id IN($inData)";
+        $sql = "SELECT * FROM `" . static::$_table . "` WHERE id IN($inData)";
         $stmt = DB::get()->prepare($sql);
         $stmt->execute($ids);
 
@@ -151,7 +155,7 @@ class ActiveRecord
         $pdo = DB::get();
         $updatedFields = array_keys($this->_modified);
         if ($this->id) {
-            $sql = "UPDATE " . static::$_table . " SET ";
+            $sql = "UPDATE `" . static::$_table . "` SET ";
             $fields = [];
             $values = [];
             foreach ($updatedFields as $field) {
@@ -162,7 +166,7 @@ class ActiveRecord
             $sql .= " WHERE id = :id";
             $values['id'] = $this->id;
         } else {
-            $sql = "INSERT INTO " . static::$_table;
+            $sql = "INSERT INTO `" . static::$_table . "`";
             $placeholders = [];
             $values = [];
             foreach ($updatedFields as $field) {
