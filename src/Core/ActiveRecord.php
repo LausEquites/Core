@@ -9,7 +9,7 @@ class ActiveRecord
 {
     protected static $_table;
     protected static $_typeMap;
-    protected $_modified;
+    protected $_modified = [];
     protected $id;
 
     /**
