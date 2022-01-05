@@ -28,7 +28,7 @@ class ActiveRecord
 
         $obj = false;
         if ($row) {
-            $obj = self::createFromArray($row);
+            $obj = static::createFromArray($row);
         }
 
         return $obj;
@@ -75,7 +75,7 @@ class ActiveRecord
         $stmt->execute($params);
 
         while ($data = $stmt->fetch()) {
-            $objs[] = self::createFromArray($data);
+            $objs[] = static::createFromArray($data);
         }
 
         return $objs;
