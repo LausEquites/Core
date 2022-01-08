@@ -159,7 +159,7 @@ class ActiveRecord
             $fields = [];
             $values = [];
             foreach ($updatedFields as $field) {
-                $fields[] = "$field=:$field";
+                $fields[] = "`$field`=:$field";
                 $values[$field] = $this->$field;
             }
             $sql .= implode(',', $fields);
@@ -173,6 +173,10 @@ class ActiveRecord
                 $placeholders[] = ":$field";
                 $values[$field] =  $this->$field;
             }
+            $escape = function(&$value) {
+                $value = "`$value`";
+            };
+            array_walk($updatedFields, $escape);
             $sql .= "(" . implode(',', $updatedFields) . ") ";
             $sql .= "VALUES (" . implode(',', $placeholders) . ")";
         }
