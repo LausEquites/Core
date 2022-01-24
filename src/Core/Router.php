@@ -12,6 +12,9 @@ class Router
     private static $router;
     private $structureXmlPath;
     private $namespace;
+    /** @var string[] Node names and parameters translated from the xml file */
+    private $path = [];
+
 
     public static function getInstance()
     {
@@ -51,6 +54,7 @@ class Router
             }
             if ($lastElement->$part) {
                 $parents[] = $lastElement;
+                $this->path[] = $lastElement->$part->getName();
                 $fullClassName = $namespace . "\\" . ucfirst($lastElement->$part->getName());
                 if (class_exists($fullClassName, true)) {
                     $controllers[] = new $fullClassName;
@@ -66,6 +70,7 @@ class Router
             } elseif ($routerParamNames) {
                 // Handle parameters
                 $currentParam = array_shift($routerParamNames);
+                $this->path[] = ":" . $currentParam;
                 $routerParams[$currentParam] = $part;
                 $routerParamsByController[$fullClassName][$currentParam] = $part;
             } else {
@@ -83,5 +88,10 @@ class Router
         }
 
         echo $controller->serve();
+    }
+
+    public function getPath()
+    {
+        return $this->path;
     }
 }
