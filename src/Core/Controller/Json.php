@@ -15,16 +15,7 @@ class Json extends Controller
     public function serve()
     {
         header("Content-Type: application/json");
-        try {
-            $out = parent::serve();
-        } catch(External $e) {
-            http_response_code($e->getCode());
-            $out = self::getErrorObject($e->getMessage());
-        } catch(\Exception $e) {
-            http_response_code(500);
-            $out = self::getErrorObject($e->getMessage());
-        }
-
+        $out = parent::serve();
         if (!is_string($out)) {
             $out = json_encode($out);
         }
