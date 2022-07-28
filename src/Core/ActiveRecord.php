@@ -107,18 +107,14 @@ class ActiveRecord
         $obj = new static();
         foreach ($data as $key => $value) {
             if (property_exists($obj, $key)) {
-                $type = static::$_typeMap[$key]?? null;
-                switch ($type) {
-                    case 'dt':
-                        if ($value !== null) {
-                            $value = Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC');
-                        }
-                        break;
-                    case 'json':
-                        if ($value !== null) {
-                            $value = json_decode($value);
-                        }
-                        break;
+                $type = static::$_typeMap[$key] ?? null;
+                if ($value !== null) {
+                    $value = match ($type) {
+                        'dt', 'datetime' => Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC'),
+                        'json', 'json-object' => json_decode($value, flags: JSON_THROW_ON_ERROR),
+                        'json-assoc' => json_decode($value, true, flags: JSON_THROW_ON_ERROR),
+                        default => $value
+                    };
                 }
 
                 $obj->$key = $value;
