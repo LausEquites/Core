@@ -32,4 +32,9 @@ class Vault
     {
         unset($this->data[$name]);
     }
+    
+    public function clear()
+    {
+        $this->data = [];
+    }
 }
