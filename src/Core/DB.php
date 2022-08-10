@@ -33,10 +33,16 @@ class DB
         }
 
         $dbConf = $config->db;
-        $dsn = "mysql:dbname={$dbConf->db};host={$dbConf->host}";
-        $user = $dbConf->user;
-        $password = $dbConf->pass;
 
-        return new \PDO($dsn, $user, $password);
+        $dsn      = "mysql:dbname={$dbConf->db};host={$dbConf->host};charset=utf8mb4";
+        $user     = $dbConf->user;
+        $password = $dbConf->pass;
+       
+        return new \PDO(
+            $dsn, $user, $password,
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]
+        );
     }
 }
