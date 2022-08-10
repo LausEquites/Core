@@ -211,6 +211,8 @@ class ActiveRecord
                     $stmt->bindValue(":$field", (int)$value, \PDO::PARAM_INT);
                     break;
                 case 'json':
+                case 'json-assoc':
+                case 'json-object':
                     $value = json_encode($value);
                     if ($value === false) {
                         throw new External("Error converting $field to json", 500);
