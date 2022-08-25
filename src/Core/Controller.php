@@ -41,13 +41,11 @@ class Controller
 
     public function getParameter($name, $default = null)
     {
-        if (isset($this->parameters->$name)) {
-            return $this->parameters->$name;
-        } elseif ($default !== null) {
-            return $default;
-        } else {
-            return null;
+        if (property_exists($this->parameters,$name)) {
+            return $this->parameters->{$name};
         }
+
+        return null;
     }
 
     public function getRouterParameters()
