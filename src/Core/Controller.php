@@ -45,7 +45,7 @@ class Controller
             return $this->parameters->{$name};
         }
 
-        return null;
+        return $default;
     }
 
     public function getRouterParameters()
