@@ -30,7 +30,8 @@ class Controller
     private function loadParameters()
     {
         if ($this->parameters === null) {
-            $this->parameters = json_decode(file_get_contents('php://input'));
+            $json = file_get_contents('php://input')?? '{}';
+            $this->parameters = (object) json_decode($json);
         }
     }
 
