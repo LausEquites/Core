@@ -193,29 +193,41 @@ class Router
         $xmlstr = file_get_contents($this->structureXmlPath);
         $xml = new \SimpleXMLElement($xmlstr);
 
-        return $this->parseNode($xml);
+        return $this->parseNode($xml, $this->namespace);
     }
 
     /**
      * @param $node
      * @return array
      */
-    private function parseNode($node, $namespace = '', $path = '')
+    private function parseNode($node, $namespace = '')
     {
         $attributes = $node->attributes();
         $params = $attributes->params ? explode(',', $attributes->params) : [];
-        $childNs = $attributes->{"child-ns"};
+        $childNs = $attributes->{"child-ns"}?? null;
         $children = [];
+        $newNamespace = $namespace;
+        if ($childNs) {
+            $newNamespace .= "\\$childNs";
+        }
         foreach ($node->children() as $child) {
-            $children[] = $this->parseNode($child, $namespace, $path . '/' . $node->getName());
+            $children[] = $this->parseNode($child, $newNamespace);
         }
 
-        return [
+        $node = [
             'name' => $node->getName(),
             'params' => $params,
+            'class' => $namespace . "\\" . ucfirst($node->getName()),
             'childNs' => $childNs,
             'children' => $children,
-            'path' => $path . '/' . $node->getName(),
         ];
+        if ($params) {
+            $node['params'] = $params;
+        }
+        if ($childNs) {
+            $node['childNs'] = $childNs;
+        }
+
+        return $node;
     }
 }

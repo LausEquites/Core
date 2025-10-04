@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <root>
+    <openapi/>
     <test>
         <foo></foo>
         <json></json>
-        <openapi/>
     </test>
     <houses child-ns="Houses" params="houseId">
-        <floors/>
+        <floors params="floorId"/>
     </houses>
 </root>
