@@ -1,10 +1,8 @@
 <?php
 
-
 namespace Controllers;
 
-
-class Test
+class Test extends \Core\Controller\Json
 {
 
 }

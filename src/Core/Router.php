@@ -124,7 +124,7 @@ class Router
     {
         $xmlstr = file_get_contents($this->structureXmlPath);
         $xml = new \SimpleXMLElement($xmlstr);
-        list($uri) = explode('?', $_SERVER['REQUEST_URI']);
+        [$uri] = explode('?', $_SERVER['REQUEST_URI']);
 
         $lastElement = $xml;
         $controllers = [];
@@ -186,5 +186,36 @@ class Router
     public function getPath()
     {
         return $this->path;
+    }
+
+    public function getNodesNested()
+    {
+        $xmlstr = file_get_contents($this->structureXmlPath);
+        $xml = new \SimpleXMLElement($xmlstr);
+
+        return $this->parseNode($xml);
+    }
+
+    /**
+     * @param $node
+     * @return array
+     */
+    private function parseNode($node, $namespace = '', $path = '')
+    {
+        $attributes = $node->attributes();
+        $params = $attributes->params ? explode(',', $attributes->params) : [];
+        $childNs = $attributes->{"child-ns"};
+        $children = [];
+        foreach ($node->children() as $child) {
+            $children[] = $this->parseNode($child, $namespace, $path . '/' . $node->getName());
+        }
+
+        return [
+            'name' => $node->getName(),
+            'params' => $params,
+            'childNs' => $childNs,
+            'children' => $children,
+            'path' => $path . '/' . $node->getName(),
+        ];
     }
 }

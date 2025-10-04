@@ -3,5 +3,9 @@
     <test>
         <foo></foo>
         <json></json>
+        <openapi/>
     </test>
+    <houses child-ns="Houses" params="houseId">
+        <floors/>
+    </houses>
 </root>
