@@ -17,6 +17,18 @@ class Houses extends Json
                 ],
                 'POST' => [
                     'tags' => ['House'],
+                    'params' => [
+                        'json' => [
+                            'required' => [
+                                'name' => 'string',
+                                'street' => 'string',
+                                'streetNumber' => 'int',
+                            ],
+                            'optional' => [
+                                'builtYear' => 'int'
+                            ]
+                        ],
+                    ],
                 ],
                 'GET_PARAMS' => [
                     'tags' => ['House'],
