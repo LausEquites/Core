@@ -1,19 +1,27 @@
 {
-  "name": "equites/core",
-  "description": "Core framework",
-  "authors": [
-    {
-      "name": "Laus Brandt"
+    "name": "equites/core",
+    "description": "Core framework",
+    "authors": [
+        {
+            "name": "Laus Brandt"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.4",
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "ext-simplexml": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Core\\": "src/Core",
+            "Phdantic\\": "src/Phdantic"
+        }
+    },
+    "require-dev": {
+        "codeception/codeception": "^5.3@dev",
+        "codeception/module-phpbrowser": "*",
+        "codeception/module-asserts": "*"
     }
-  ],
-  "minimum-stability": "dev",
-  "require": {
-    "php": ">=8.4",
-    "ext-json": "*",
-    "ext-pdo": "*",
-    "ext-simplexml": "*"
-  },
-  "autoload": {
-    "psr-4": {"Core\\": "src/Core"}
-  }
 }
