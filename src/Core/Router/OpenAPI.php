@@ -107,6 +107,7 @@ class OpenAPI {
         $classMethods = get_class_methods($node['class']);
         $summary = '';
         $description = '';
+        $requestBody = [];
         $tags = [];
 
         if (in_array('META', $classMethods)) {
@@ -119,6 +120,9 @@ class OpenAPI {
             }
             if (isset($meta['methods'][$method]['tags'])) {
                 $tags = $meta['methods'][$method]['tags'];
+            }
+            if (isset($meta['methods'][$method]['params']['json'])) {
+                $requestBody = $this->generateRequestBody($meta['methods'][$method]['params']['json']);
             }
         }
 
@@ -139,8 +143,46 @@ class OpenAPI {
         if ($tags) {
             $path['tags'] = $tags;
         }
+        if ($requestBody) {
+            $path['requestBody'] = $requestBody;
+        }
 
         return $path;
+    }
+
+    private function generateRequestBody($jsonParams)
+    {
+        $required = $jsonParams['required']?? [];
+        $optional = $jsonParams['optional']?? [];
+
+        $params = array_merge($required, $optional);
+        $properties = [];
+        foreach ($params as $name => $type) {
+            $type = match ($type) {
+                'int' => 'integer',
+                'bool' => 'boolean',
+                default => $type,
+            };
+
+            $properties[$name] = [
+                'type' => $type,
+            ];
+        }
+
+        $requestBody = [
+            'required' => true,
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => $properties,
+                        'required' => array_keys($required),
+                    ],
+                ],
+            ],
+        ];
+
+        return $requestBody;
     }
 
     private function generateDefaultPathSummary($node, $method)
