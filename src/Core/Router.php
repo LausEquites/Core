@@ -2,6 +2,9 @@
 
 namespace Core;
 
+use Core\Exceptions\External;
+use Core\Observability\Log;
+
 /**
  * Core\Router
  *
@@ -158,7 +161,8 @@ class Router
                 $routerParams[$currentParam] = $part;
                 $routerParamsByController[$fullClassName][$currentParam] = $part;
             } else {
-                throw new \Exception("404 - $part not found in $uri");
+                Log::notice("Router: $part not found in $uri");
+                throw new External("Not found", 404);
             }
         }
 

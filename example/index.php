@@ -1,6 +1,9 @@
 <?php
 
 // CORS
+use Core\Observability\Log;
+use Utils\Boot;
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: *');
@@ -16,8 +19,8 @@ include "Controllers/Json.php";
 include "Controllers/Openapi.php";
 include "Controllers/Houses.php";
 include "Controllers/Houses/Floors.php";
+include "Utils/Boot.php";
 
-$router = Core\Router::getInstance();
-$router->loadRoutes(__DIR__ . '/config/structure.xml');
-$router->setNameSpace('Controllers');
-$router->run();
+Boot::init();
+Boot::run();
+
