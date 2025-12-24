@@ -23,6 +23,15 @@
         "monolog/monolog": "^3.0@dev",
         "codeception/codeception": "^5.3@dev",
         "codeception/module-phpbrowser": "*",
-        "codeception/module-asserts": "*"
+        "codeception/module-asserts": "*",
+        "open-telemetry/sdk": "^1.10.0",
+        "open-telemetry/exporter-otlp": "^1.3.3",
+        "open-telemetry/opentelemetry-logger-monolog": "^1.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true,
+            "tbachert/spi": true
+        }
     }
 }

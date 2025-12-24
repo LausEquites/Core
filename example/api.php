@@ -3,7 +3,7 @@
 // CORS
 use Core\Observability\Log;
 use Utils\Boot;
-
+//phpinfo(); die();
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: *');
@@ -21,6 +21,10 @@ include "Controllers/Houses.php";
 include "Controllers/Houses/Floors.php";
 include "Utils/Boot.php";
 
+putenv("OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4318");
+putenv("OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf");
+putenv("OTEL_EXPORTER_OTLP_TIMEOUT=1500");
+
 Boot::init();
 Boot::run();
-
+Boot::close();
