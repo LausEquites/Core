@@ -25,6 +25,15 @@ putenv("OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4318");
 putenv("OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf");
 putenv("OTEL_EXPORTER_OTLP_TIMEOUT=1500");
 
-Boot::init();
-Boot::run();
-Boot::close();
+try {
+    Boot::init();
+    Boot::run();
+}
+catch (\Throwable $e) {
+    Log::handleUncaughtExceptionJSON($e);
+} finally {
+    Boot::close();
+}
+
+
+

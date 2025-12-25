@@ -5,8 +5,8 @@ namespace Core\Observability;
 
 use Core\Observability\OTEL\HTTPPropagationGetter;
 use OpenTelemetry\API\Trace\Propagation\TraceContextPropagator;
-use OpenTelemetry\API\Trace\SpanInterface;
 use OpenTelemetry\API\Trace\SpanKind;
+use OpenTelemetry\SDK\Trace\Span;
 use OpenTelemetry\SDK\Trace\TracerProviderFactory;
 
 class Trace {
@@ -44,16 +44,31 @@ class Trace {
         }
     }
 
+    public static function startSpan($name, array $attributes = [])
+    {
+        return self::$tracer->spanBuilder($name)
+            ->setAttributes($attributes)
+            ->startSpan();
+    }
+
     /**
      * Retrieves the root span from the tracer items.
      *
      * This method accesses the tracer items array and returns the value associated
      * with the 'rootSpan' key, which represents the root span in a tracing operation.
      *
-     * @return SpanInterface The root span object or value stored in the tracer items.
+     * @return Span The root span object or value stored in the tracer items.
      */
     public static function getRootSpan()
     {
         return self::$tracerItems['rootSpan'];
+    }
+
+    /**
+     *
+     */
+    public static function getTracer()
+    {
+       return self::$tracer;
     }
 }

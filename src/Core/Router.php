@@ -4,6 +4,7 @@ namespace Core;
 
 use Core\Exceptions\External;
 use Core\Observability\Log;
+use Core\Observability\Trace;
 
 /**
  * Core\Router
@@ -167,17 +168,28 @@ class Router
         }
 
         // Inject parameters and run preServe hooks
+        $preServe = [];
         foreach ($controllers as $controller) {
             $controller->setRouterParameters($routerParams);
             $ownParams = $routerParamsByController[$controller::class] ?? [];
             $controller->setOwnRouterParameters($ownParams);
             if (method_exists($controller, 'preServe')) {
+                $preServe[] = $controller;
+            }
+        }
+        $tracer = Trace::getTracer();
+        if ($preServe) {
+            if ($tracer) { $preServeSpan = Trace::startSpan('router.preServe');}
+            foreach ($preServe as $controller) {
                 $controller->preServe();
             }
+            if ($tracer) { $preServeSpan->end();}
         }
 
         // Serve the final controller in the chain
+        if ($tracer) { $serveSpan = Trace::startSpan('router.serve');}
         echo $controller->serve();
+        if ($tracer) { $serveSpan->end();}
     }
 
     /**

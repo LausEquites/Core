@@ -16,6 +16,10 @@ class Boot {
 
     public static function close()
     {
+        $span = Trace::startSpan('Locking doors');
+        usleep(5000);
+        $span->end();
+
         Trace::close();
     }
 

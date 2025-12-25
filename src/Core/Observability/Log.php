@@ -76,6 +76,11 @@ class Log {
     public static function handleUncaughtExceptionJSON(\Throwable $e)
     {
         $logger = Log::getLogger();
+        if ($rootSpan = Trace::getRootSpan()) {
+            $rootSpan->recordException($e);
+            $rootSpan->setStatus(\OpenTelemetry\API\Trace\StatusCode::STATUS_ERROR);
+        }
+
         $return = ['error' => ''];
         if ($e instanceof \Core\Exceptions\External) {
             $return['error'] = $e->getMessage();

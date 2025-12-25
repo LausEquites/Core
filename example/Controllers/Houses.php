@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use Core\Controller\Json;
+use Core\Observability\Trace;
 
 class Houses extends Json
 {
@@ -35,6 +36,13 @@ class Houses extends Json
                 ],
             ]
         ];
+    }
+
+    public function preServe ()
+    {
+        $span = Trace::startSpan('Checking locks');
+        usleep(2000);
+        $span->end();
     }
 
     public function GET()
