@@ -4,7 +4,7 @@ namespace Utils;
 
 use Core\Exceptions\External;
 use Core\Observability\Log;
-use Core\Observability\Trace;
+use Core\Observability\Tracer;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
@@ -16,16 +16,16 @@ class Boot {
 
     public static function close()
     {
-        $span = Trace::startSpan('Locking doors');
+        $span = Tracer::startSpan('Locking doors');
         usleep(5000);
         $span->end();
 
-        Trace::close();
+        Tracer::close();
     }
 
     private  static function initTracer()
     {
-        Trace::init();
+        Tracer::init();
     }
 
     private static function initLogger()
@@ -43,7 +43,7 @@ class Boot {
     }
 
     public static function run() {
-        $rootSpan = Trace::getRootSpan();
+        $rootSpan = Tracer::getRootSpan();
         $rootSpan->addEvent('Handling request');
         $router = \Core\Router::getInstance();
         $router->loadRoutes(__DIR__ . '/../config/structure.xml');

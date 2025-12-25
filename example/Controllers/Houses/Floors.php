@@ -3,7 +3,7 @@
 namespace Controllers\Houses;
 
 use Core\Controller\Json;
-use Core\Observability\Trace;
+use Core\Observability\Tracer;
 
 class Floors extends Json
 {
@@ -27,14 +27,14 @@ class Floors extends Json
 
     public function preServe ()
     {
-        $span = Trace::startSpan('Checking floor stuff');
+        $span = Tracer::startSpan('Checking floor stuff');
         usleep(5000);
         $span->end();
     }
 
     public function GET()
     {
-        $span = Trace::startSpan('Getting floors');
+        $span = Tracer::startSpan('Getting floors');
         usleep(10000);
         $span->end();
 

@@ -4,7 +4,7 @@ namespace Core;
 
 use Core\Exceptions\External;
 use Core\Observability\Log;
-use Core\Observability\Trace;
+use Core\Observability\Tracer;
 
 /**
  * Core\Router
@@ -177,19 +177,19 @@ class Router
                 $preServe[] = $controller;
             }
         }
-        $tracer = Trace::getTracer();
+        $tracerEnabled = Tracer::isEnabled();
         if ($preServe) {
-            if ($tracer) { $preServeSpan = Trace::startSpan('router.preServe');}
+            if ($tracerEnabled) { $preServeSpan = Tracer::startSpan('router.preServe');}
             foreach ($preServe as $controller) {
                 $controller->preServe();
             }
-            if ($tracer) { $preServeSpan->end();}
+            if ($tracerEnabled) { $preServeSpan->end();}
         }
 
         // Serve the final controller in the chain
-        if ($tracer) { $serveSpan = Trace::startSpan('router.serve');}
+        if ($tracerEnabled) { $serveSpan = Tracer::startSpan('router.serve');}
         echo $controller->serve();
-        if ($tracer) { $serveSpan->end();}
+        if ($tracerEnabled) { $serveSpan->end();}
     }
 
     /**
