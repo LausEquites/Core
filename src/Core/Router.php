@@ -126,6 +126,12 @@ class Router
      */
     public function run()
     {
+        $tracerEnabled = Tracer::isEnabled();
+        if ($tracerEnabled) {
+            $routerSpan = Tracer::startSpan('router.run');
+            $routerScope = $routerSpan->activate();
+        }
+
         $xmlstr = file_get_contents($this->structureXmlPath);
         $xml = new \SimpleXMLElement($xmlstr);
         [$uri] = explode('?', $_SERVER['REQUEST_URI']);
@@ -167,6 +173,11 @@ class Router
             }
         }
 
+        if ($tracerEnabled) {
+            $routerPath = implode('/', $this->path);
+            $routerSpan->updateName($_SERVER['REQUEST_METHOD'] . ' ' . $routerPath);
+        }
+
         // Inject parameters and run preServe hooks
         $preServe = [];
         foreach ($controllers as $controller) {
@@ -177,19 +188,33 @@ class Router
                 $preServe[] = $controller;
             }
         }
-        $tracerEnabled = Tracer::isEnabled();
         if ($preServe) {
-            if ($tracerEnabled) { $preServeSpan = Tracer::startSpan('router.preServe');}
+            if ($tracerEnabled) {
+                $preServeSpan = Tracer::startSpan('router.preServe');
+                $preServeScope = $preServeSpan->activate();
+            }
             foreach ($preServe as $controller) {
                 $controller->preServe();
             }
-            if ($tracerEnabled) { $preServeSpan->end();}
+            if ($tracerEnabled) {
+                $preServeSpan->end();
+                $preServeScope->detach();
+            }
         }
 
         // Serve the final controller in the chain
-        if ($tracerEnabled) { $serveSpan = Tracer::startSpan('router.serve');}
+        if ($tracerEnabled) {
+            $serveSpan = Tracer::startSpan('router.serve');
+            $serveScope = $serveSpan->activate();
+        }
         echo $controller->serve();
-        if ($tracerEnabled) { $serveSpan->end();}
+        if ($tracerEnabled) {
+            $serveScope->detach();
+            $serveSpan->end();
+
+            $routerScope->detach();
+            $routerSpan->end();
+        }
     }
 
     /**
