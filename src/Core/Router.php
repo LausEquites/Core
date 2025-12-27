@@ -128,7 +128,7 @@ class Router
     {
         $tracerEnabled = Tracer::isEnabled();
         if ($tracerEnabled) {
-            $routerSpan = Tracer::startSpan('router.run');
+            $routerSpan = Tracer::startFrameworkSpan('router.run');
             $routerScope = $routerSpan->activate();
         }
 
@@ -169,6 +169,10 @@ class Router
                 $routerParamsByController[$fullClassName][$currentParam] = $part;
             } else {
                 Log::notice("Router: $part not found in $uri");
+                if ($tracerEnabled) {
+                    $routerScope->detach();
+                    $routerSpan->end();
+                }
                 throw new External("Not found", 404);
             }
         }
@@ -178,7 +182,6 @@ class Router
             $routerSpan->updateName($_SERVER['REQUEST_METHOD'] . ' ' . $routerPath);
         }
 
-        // Inject parameters and run preServe hooks
         $preServe = [];
         foreach ($controllers as $controller) {
             $controller->setRouterParameters($routerParams);
@@ -188,9 +191,21 @@ class Router
                 $preServe[] = $controller;
             }
         }
+        $this->handlingPreServe($preServe);
+        $this->handlingServe($controller);
+
+        if ($tracerEnabled) {
+            $routerScope->detach();
+            $routerSpan->end();
+        }
+    }
+
+    private function handlingPreServe($preServe = [])
+    {
+        $tracerEnabled = Tracer::isEnabled();
         if ($preServe) {
             if ($tracerEnabled) {
-                $preServeSpan = Tracer::startSpan('router.preServe');
+                $preServeSpan = Tracer::startFrameworkSpan('router.preServe');
                 $preServeScope = $preServeSpan->activate();
             }
             foreach ($preServe as $controller) {
@@ -201,19 +216,19 @@ class Router
                 $preServeScope->detach();
             }
         }
+    }
 
-        // Serve the final controller in the chain
+    private function handlingServe($controller)
+    {
+        $tracerEnabled = Tracer::isEnabled();
         if ($tracerEnabled) {
-            $serveSpan = Tracer::startSpan('router.serve');
+            $serveSpan = Tracer::startFrameworkSpan('router.serve');
             $serveScope = $serveSpan->activate();
         }
         echo $controller->serve();
         if ($tracerEnabled) {
             $serveScope->detach();
             $serveSpan->end();
-
-            $routerScope->detach();
-            $routerSpan->end();
         }
     }
 

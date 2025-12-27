@@ -13,17 +13,22 @@ class Tracer {
 
     /** @var \OpenTelemetry\SDK\Trace\Tracer|null */
     private static $tracer;
+    /** @var \OpenTelemetry\SDK\Trace\Tracer|null */
+    private static $frameworkTracer;
     private static $tracerItems = [];
     private static $enabled = false;
 
-    public static function init() {
+    public static function init($defaultTracerName = 'main') {
         $tracePropagator = TraceContextPropagator::getInstance();
         $context = $tracePropagator->extract($_SERVER, new HTTPPropagationGetter());
 
         $factory = new TracerProviderFactory();
         $tracerProvider = $factory->create();
 
-        $tracer = $tracerProvider->getTracer('main');
+        $tracer = $tracerProvider->getTracer($defaultTracerName);
+        self::$tracer = $tracer;
+        $tracer = $tracerProvider->getTracer('core');
+        self::$frameworkTracer = $tracer;
 
         $rootSpan = $tracer->spanBuilder('root')
             ->setParent($context)
@@ -32,7 +37,6 @@ class Tracer {
 
         self::$tracerItems['rootSpan'] = $rootSpan;
         self::$tracerItems['rootScope'] = $rootSpan->activate();
-        self::$tracer = $tracer;
         self::$tracerItems['tracerProvider'] = $tracerProvider;
         self::$enabled = true;
     }
@@ -47,9 +51,32 @@ class Tracer {
         }
     }
 
+    /**
+     * Starts a new span with the specified name and attributes.
+     *
+     * @param string $name The name of the span to start.
+     * @param array $attributes Optional attributes to associate with the span.
+     * @return \OpenTelemetry\Trace\Span The newly created span.
+     */
     public static function startSpan($name, array $attributes = [])
     {
         return self::$tracer->spanBuilder($name)
+            ->setAttributes($attributes)
+            ->startSpan();
+    }
+
+    /**
+     * Starts a new framework span with the specified name and attributes.
+     *
+     * This method is only supposed to be used by the core framework.
+     *
+     * @param string $name The name of the span to start.
+     * @param array $attributes Optional attributes to associate with the span.
+     * @return \OpenTelemetry\Trace\Span The newly created span.
+     */
+    public static function startFrameworkSpan($name, array $attributes = [])
+    {
+        return self::$frameworkTracer->spanBuilder($name)
             ->setAttributes($attributes)
             ->startSpan();
     }
