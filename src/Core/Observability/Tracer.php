@@ -30,9 +30,11 @@ class Tracer {
         $tracer = $tracerProvider->getTracer('core');
         self::$frameworkTracer = $tracer;
 
+        $requestStartNs = (int) ($_SERVER['REQUEST_TIME_FLOAT'] * 1_000_000_000);
         $rootSpan = $tracer->spanBuilder('root')
             ->setParent($context)
             ->setSpanKind(SpanKind::KIND_SERVER)
+            ->setStartTimestamp($requestStartNs)
             ->startSpan();
 
         self::$tracerItems['rootSpan'] = $rootSpan;

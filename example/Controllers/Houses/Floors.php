@@ -3,6 +3,7 @@
 namespace Controllers\Houses;
 
 use Core\Controller\Json;
+use Core\Observability\Log;
 use Core\Observability\Tracer;
 
 class Floors extends Json
@@ -36,6 +37,7 @@ class Floors extends Json
     {
         $span = Tracer::startSpan('Getting floors');
         usleep(10000);
+        Log::info('Floor map found');
         $span->end();
 
         return 'Floors';

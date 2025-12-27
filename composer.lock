@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c732cb2c1f8f608f3924c0c94bf1819b",
+    "content-hash": "dac19770ae7dd86bf9255604285e4eeb",
     "packages": [],
     "packages-dev": [
         {
@@ -157,12 +157,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Codeception/Codeception.git",
-                "reference": "0a3ffdbbb812019c13a6e6b01a2baa346a08962a"
+                "reference": "5dd6e63ac84541131d48b4605011da15110d5691"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Codeception/Codeception/zipball/0a3ffdbbb812019c13a6e6b01a2baa346a08962a",
-                "reference": "0a3ffdbbb812019c13a6e6b01a2baa346a08962a",
+                "url": "https://api.github.com/repos/Codeception/Codeception/zipball/5dd6e63ac84541131d48b4605011da15110d5691",
+                "reference": "5dd6e63ac84541131d48b4605011da15110d5691",
                 "shasum": ""
             },
             "require": {
@@ -277,7 +277,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2025-12-17T14:56:15+00:00"
+            "time": "2025-12-24T13:37:07+00:00"
         },
         {
             "name": "codeception/lib-asserts",
@@ -4228,12 +4228,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "3de4ba117e53d344d7eaf8df880d1d5214150246"
+                "reference": "ccae82871faae9494fc568a0bb8aa0c3ce1cd76c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/3de4ba117e53d344d7eaf8df880d1d5214150246",
-                "reference": "3de4ba117e53d344d7eaf8df880d1d5214150246",
+                "url": "https://api.github.com/repos/symfony/console/zipball/ccae82871faae9494fc568a0bb8aa0c3ce1cd76c",
+                "reference": "ccae82871faae9494fc568a0bb8aa0c3ce1cd76c",
                 "shasum": ""
             },
             "require": {
@@ -4310,7 +4310,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-12-23T14:52:15+00:00"
+            "time": "2025-12-25T03:44:57+00:00"
         },
         {
             "name": "symfony/css-selector",
