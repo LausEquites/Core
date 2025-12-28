@@ -81,22 +81,25 @@ class Log {
             $rootSpan->setStatus(\OpenTelemetry\API\Trace\StatusCode::STATUS_ERROR);
         }
 
-        $return = ['error' => ''];
+        $return = ['msg' => ''];
         if ($e instanceof \Core\Exceptions\External) {
-            $return['error'] = $e->getMessage();
+            $return['msg'] = $e->getMessage();
+            $return['errors'] = $e->getErrors();
             $returnCode = $e->getCode();
+            $logMessage = 'Uncaught \'external\' exception';
+            $logContext = ['exception' => $e, 'code' => $returnCode];
             if ($returnCode < 500 || $returnCode == 501) {
-                $logger->notice('Uncaught \'external\' exception', ['exception' => $e, 'code' => $returnCode]);
+                $logger->notice($logMessage, $logContext);
             } else {
-                $logger->error('Uncaught \'external\' exception', ['exception' => $e, 'code' => $returnCode]);
+                $logger->error($logMessage, $logContext);
             }
         } else {
             $logger->error('Uncaught exception', ['exception' => $e]);
             $returnCode = 500;
         }
 
-        if ($returnCode >= 500) {
-            $return['error'] = 'Internal Server Error';
+        if ($returnCode >= 500 && $returnCode != 501) {
+            $return['msg'] = 'Internal Server Error';
         }
 
         if (!headers_sent()) {

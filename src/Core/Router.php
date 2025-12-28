@@ -132,8 +132,7 @@ class Router
             $routerScope = $routerSpan->activate();
         }
 
-        $xmlstr = file_get_contents($this->structureXmlPath);
-        $xml = new \SimpleXMLElement($xmlstr);
+        $xml = $this->getXmlStructure();
         [$uri] = explode('?', $_SERVER['REQUEST_URI']);
 
         $lastElement = $xml;
@@ -191,13 +190,28 @@ class Router
                 $preServe[] = $controller;
             }
         }
-        $this->handlingPreServe($preServe);
-        $this->handlingServe($controller);
 
-        if ($tracerEnabled) {
-            $routerScope->detach();
-            $routerSpan->end();
+        try {
+            $this->handlingPreServe($preServe);
+            $this->handlingServe($controller);
+        } catch (\Throwable $e) {
+            throw $e;
+        } finally {
+            if ($tracerEnabled) {
+                $routerScope->detach();
+                $routerSpan->end();
+            }
         }
+    }
+
+    /**
+     * @return \SimpleXMLElement
+     * @throws \Exception
+     */
+    private function getXmlStructure()
+    {
+        $xmlstr = file_get_contents($this->structureXmlPath);
+        return new \SimpleXMLElement($xmlstr);
     }
 
     private function handlingPreServe($preServe = [])
@@ -225,11 +239,19 @@ class Router
             $serveSpan = Tracer::startFrameworkSpan('router.serve');
             $serveScope = $serveSpan->activate();
         }
-        echo $controller->serve();
-        if ($tracerEnabled) {
-            $serveScope->detach();
-            $serveSpan->end();
+
+        try {
+            echo $controller->serve();
+        } catch (\Throwable $e) {
+            throw $e;
+        } finally {
+            if ($tracerEnabled) {
+                $serveScope->detach();
+                $serveSpan->end();
+            }
         }
+
+
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Core;
 
 
 use Core\Exceptions\External;
+use Phdantic\Phdantic;
 
 /**
  * Core\Controller
@@ -55,9 +56,26 @@ class Controller
             $method .= "_PARAMS";
         }
         if (method_exists($this, $method)) {
+            if (method_exists($this, 'META')) {
+                $this->validataParams($method);
+            }
+
             return $this->$method();
         } else {
             throw new External("Not implemented - $method", 501);
+        }
+    }
+
+    private function validataParams($method)
+    {
+        $meta = $this->META();
+        $scheme = $meta['methods'][$method]['params']?? [];
+        if (isset($scheme['json'])) {
+            if (!Phdantic::validateObject($this->getParameters(), $scheme['json'])) {
+                $e = new External('Invalid JSON', 400);
+                $e->setErrors(Phdantic::getLastErrors());
+                throw $e;
+            }
         }
     }
 

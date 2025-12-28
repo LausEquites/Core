@@ -3,6 +3,7 @@
 namespace Phdantic;
 
 class Phdantic {
+    static private $lastErrors = [];
 
     /**
      * Filters an object based on defined required and optional in $rules.
@@ -31,25 +32,33 @@ class Phdantic {
     {
         $required = $rules['required']?? [];
         $optional = $rules['optional']?? [];
+        $errors = [];
         $properties = get_object_vars($object);
 
         foreach ($required as $key => $type) {
-            if (!isset($properties[$key])) {
-                return false;
+            if (!array_key_exists($key,$properties)) {
+                $errors['missing'][] = $key;
+                continue;
             }
 
             if (!self::validateFromType($properties[$key], $type)) {
-                return false;
+                $errors['invalid'][] = $key;
+                continue;
             }
         }
 
         foreach ($optional as $key => $type) {
-            if (!isset($properties[$key])) {
+            if (!array_key_exists($key,$properties)) {
                 continue;
             }
             if (!self::validateFromType($properties[$key], $type)) {
-                return false;
+                $errors['invalid'][] = $key;
             }
+        }
+
+        if ($errors) {
+            self::$lastErrors = $errors;
+            return false;
         }
 
         return true;
@@ -94,5 +103,10 @@ class Phdantic {
         }
 
         return false;
+    }
+
+    public static function getLastErrors()
+    {
+        return self::$lastErrors;
     }
 }
