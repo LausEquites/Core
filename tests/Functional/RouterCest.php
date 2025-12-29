@@ -100,6 +100,7 @@ final class RouterCest
                     'street' => '123 Main St.',
                     'streetNumber' => 10,
                     'builtYear' => 1983,
+                    'locked' => false,
                 ],
                 'httpStatus' => 200,
             ],
@@ -122,6 +123,17 @@ final class RouterCest
                     'builtYear' => 1983,
                 ],
                 'invalid' => ['streetNumber'],
+                'httpStatus' => 400,
+            ],
+            [
+                'name' => 'Invalid bool',
+                'params' => [
+                    'name' => 'FooBar',
+                    'street' => '123 Main St.',
+                    'streetNumber' => 10,
+                    'locked' => 'locked',
+                ],
+                'invalid' => ['locked'],
                 'httpStatus' => 400,
             ],
             [
