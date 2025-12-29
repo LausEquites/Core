@@ -67,42 +67,14 @@ class Phdantic {
     private static function validateFromType($value, $type)
     {
         switch ($type) {
-            case 'int': return self::validateInt($value);
-            case 'string': return self::validateString($value);
-            case 'bool': return self::validateBool($value);
+            case 'int': return Tester::isInt($value);
+            case 'float': return Tester::isFloat($value);
+            case 'string': return Tester::isString($value);
+            case 'bool': return Tester::isBool($value);
+            case 'array': return Tester::isArray($value);
+            case 'object': return Tester::isObject($value);
             default: throw new \Exception("Invalid type: $type");
         }
-    }
-
-    public static function validateInt($int)
-    {
-        return is_int($int);
-    }
-
-    public static function validateString($string)
-    {
-        return is_string($string);
-    }
-
-    public static function validateBool($bool)
-    {
-        if (is_bool($bool)) {
-            return true;
-        } elseif (
-            is_string($bool)
-            && (
-                $bool === 'true'
-                || $bool === 'false'
-                || $bool === '1'
-                || $bool === '0'
-            )
-        ) {
-            return true;
-        } elseif (is_int($bool) && ($bool === 0 || $bool === 1)) {
-            return true;
-        }
-
-        return false;
     }
 
     public static function getLastErrors()

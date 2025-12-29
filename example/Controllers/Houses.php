@@ -26,7 +26,8 @@ class Houses extends Json
                                 'streetNumber' => 'int',
                             ],
                             'optional' => [
-                                'builtYear' => 'int'
+                                'builtYear' => 'int',
+                                'locked' => 'bool',
                             ]
                         ],
                     ],

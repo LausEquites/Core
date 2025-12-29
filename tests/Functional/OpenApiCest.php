@@ -18,7 +18,7 @@ final class OpenApiCest
     {
         $I->sendGet('/api/openapi');
         $I->seeResponseCodeIs(200);
-        $response = $I->grabJsonResponse();
-        $I->assertEquals('3.0.4', $response->openapi);
+        $openApi = $I->grabJsonResponse();
+        $I->assertEquals('3.0.4', $openApi->openapi);
     }
 }
