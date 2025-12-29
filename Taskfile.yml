@@ -1,0 +1,19 @@
+version: 3
+
+tasks:
+  docker-bash:
+    desc: Enter the web container
+    cmds:
+      - docker compose exec web bash
+  composer:
+    desc: Run composer. Add command after -- like `task composer -- require symfony/console`
+    cmds:
+      - docker compose exec web sh -c "cd app && composer {{.CLI_ARGS}}"
+  codecept:
+    desc: Run codeception. Add command after -- like `task codeception -- run`
+    cmds:
+      - docker compose exec web sh -c "cd app && vendor/bin/codecept {{.CLI_ARGS}}"
+  tests:
+    desc: Run tests
+    cmds:
+      - docker compose exec web sh -c "cd app && vendor/bin/codecept run --coverage-html"

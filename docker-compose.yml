@@ -7,7 +7,7 @@ services:
     volumes:
       - .:/var/www/app
       - ./example:/var/www/app/public
-#      - ./docker/config/php.dev.ini:/usr/local/etc/php/conf.d/zzz_custom.ini
+      - ./example/.docker/php.dev.ini:/usr/local/etc/php/conf.d/zzz_custom.ini
     environment:
       - "APP_ENV=develop"
       - "PROJECT_NAME=core"
@@ -16,18 +16,9 @@ services:
       - "OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf"
       - "OTEL_EXPORTER_OTLP_TIMEOUT=1500"
       - "OTEL_LOG_LEVEL=debug"
-      # Debugger
-      - "XDEBUG_MODE=develop,debug"
-      # profileing
-      #- "XDEBUG_MODE=profile"
-      - "XDEBUG_START_WITH_REQUEST=trigger"
-      - "XDEBUG_PROFILER_OUTPUT_NAME=cachegrind.out"
-      #- "XDEBUG_CLIENT_HOST=host.docker.internal"
-      #- "XDEBUG_CLIENT_PORT=9003"
-      - "XDEBUG_OUTPUT_DIR=/var/www"
-      - "XDEBUG_IDEKEY=docker"
+      - "XDEBUG_MODE=develop,coverage"
+      - "XDEBUG_DISCOVER_INCLUDE_FILES=1"
       - "XDEBUG_LOG=/dev/stdout"
-      - "XDEBUG_LOG_LEVEL=7"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.core.rule=Host(`core.localhost`)"

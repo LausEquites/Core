@@ -26,4 +26,11 @@ class FunctionalTester extends \Codeception\Actor
     /**
      * Define custom actions here
      */
+
+    public function grabJsonResponse()
+    {
+        $response = $this->grabResponse();
+
+        return json_decode($response);
+    }
 }
