@@ -8,11 +8,6 @@ use Tests\Support\FunctionalTester;
 
 final class RouterCest
 {
-    public function _before(FunctionalTester $I): void
-    {
-        // Code here will be executed before each test function.
-    }
-
     // All `public` methods will be executed as tests.
     public function trySimpleRoute(FunctionalTester $I): void
     {
@@ -36,6 +31,32 @@ final class RouterCest
     {
         $I->sendGet('/api/houses/1');
         $I->seeResponseCodeIs(200);
+        $response = $I->grabJsonResponse();
+        $I->assertEquals(1, $response->id);
+        $I->assertEquals(null, $response->city);
+
+        $I->sendGet('/api/houses/1/floors');
+        $I->seeResponseCodeIs(200);
+        $response = $I->grabJsonResponse();
+        $I->assertEquals(1, $response->houseId);
+    }
+
+    public function tryRouteWithJson(FunctionalTester $I): void
+    {
+        $data = [
+            'name' => 'FooBar',
+            'street' => '123 Main St.',
+            'streetNumber' => 10,
+            'builtYear' => 1983,
+        ];
+        $I->sendPost('/api/houses', $data);
+        $I->seeResponseCodeIs(200);
+
+        $response = $I->grabJsonResponse();
+        $I->assertEquals($data['name'], $response->name);
+        $I->assertEquals($data['street'], $response->street);
+        $I->assertEquals($data['streetNumber'], $response->streetNumber);
+        $I->assertEquals($data['builtYear'], $response->builtYear);
     }
 
     public function tryRouteWithMissingJsonParams(FunctionalTester $I): void
@@ -78,10 +99,7 @@ final class RouterCest
 
         foreach ($tests as $test) {
             $I->amGoingTo("Testing {$test['name']}");
-            $I->sendPost(
-                '/api/houses',
-                $test['params']
-            );
+            $I->sendPost('/api/houses', $test['params']);
             $I->seeResponseCodeIs($test['httpStatus']);
             if (isset($test['missing'])) {
                 $response = $I->grabJsonResponse();

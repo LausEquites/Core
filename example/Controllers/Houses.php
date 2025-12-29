@@ -4,6 +4,7 @@ namespace Controllers;
 
 use Core\Controller\Json;
 use Core\Observability\Tracer;
+use stdClass;
 
 class Houses extends Json
 {
@@ -52,11 +53,32 @@ class Houses extends Json
 
     public function POST()
     {
-        return 'POST House';
+        $name = $this->getParameter('name', null);
+        $streetNumber = $this->getParameter('streetNumber', null);
+        $builtYear = $this->getParameter('builtYear', null);
+        $locked = $this->getParameter('locked', null);
+        $parameters = $this->getParameters();
+
+        $out = new stdClass();
+        $out->name = $name;
+        $out->street = $parameters->street;
+        $out->streetNumber = $streetNumber;
+        $out->builtYear = $builtYear;
+        $out->locked = $locked;
+
+
+        return $out;
     }
 
     public function GET_PARAMS()
     {
-        return 'Get House';
+        $routerParams = $this->getOwnRouterParameters();
+        $city = $this->getRouterParameter('city', null);
+        $floorId = $routerParams['houseId']?? null;
+        $out = new \stdClass();
+        $out->id = $floorId;
+        $out->city = $city;
+
+        return $out;
     }
 }

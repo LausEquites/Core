@@ -9,9 +9,6 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: *');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-ini_set('display_errors', 0);
-ini_set('html_errors', 0);
-
 // Should not be in production
 if (file_exists(__DIR__ . "/../c3.php")) {
     define('C3_CODECOVERAGE_ERROR_LOG_FILE', '/tmp/c3_error.log');

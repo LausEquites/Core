@@ -36,11 +36,16 @@ class Floors extends Json
     public function GET()
     {
         $span = Tracer::startSpan('Getting floors');
+        $floorId = $this->getRouterParameter('houseId', null);
+        $out = new \stdClass();
+        $out->houseId = $floorId;
         usleep(10000);
         Log::info('Floor map found');
         $span->end();
 
-        return 'Floors';
+
+
+        return $out;
     }
 
     public function GET_PARAMS()

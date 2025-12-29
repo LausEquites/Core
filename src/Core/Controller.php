@@ -76,6 +76,7 @@ class Controller
                 $e->setErrors(Phdantic::getLastErrors());
                 throw $e;
             }
+            $this->parameters = Phdantic::filterObject($this->getParameters(), $scheme['json']);
         }
     }
 
@@ -169,11 +170,7 @@ class Controller
      */
     public function getOwnRouterParameters()
     {
-        $params = [];
-        foreach ($this->ownRouterParameters as $name) {
-            $params[$name] = $this->routerParameters[$name];
-        }
-        return $params;
+        return $this->ownRouterParameters;
     }
 
     /**
