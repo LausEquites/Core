@@ -12,7 +12,6 @@ class Houses extends Json
         return [
             'methods' => [
                 'GET' => [
-                    'title' => 'List houses',
                     'description' => 'List all houses',
                     'tags' => ['House', 'MCP'],
                 ],
