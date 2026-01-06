@@ -2,9 +2,10 @@
 <root>
     <api>
         <openapi/>
-        <test>
+        <test child-ns="Test">
             <foo></foo>
             <json></json>
+            <wastetime/>
         </test>
         <houses child-ns="Houses" params="houseId">
             <floors params="floorId"/>

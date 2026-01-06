@@ -16,12 +16,14 @@ if (file_exists(__DIR__ . "/../c3.php")) {
 }
 
 include_once __DIR__ . "/../vendor/autoload.php";
-include "Controllers/Foo.php";
-include "Controllers/Test.php";
-include "Controllers/Json.php";
+include "Controllers/Test/Foo.php";
+include "Controllers/Test/Test.php";
+include "Controllers/Test/Json.php";
+include "Controllers/Test/Wastetime.php";
 include "Controllers/Openapi.php";
 include "Controllers/Houses.php";
 include "Controllers/Houses/Floors.php";
+include "Utils/Jobs/TimeWaster.php";
 include "Utils/Boot.php";
 
 putenv("OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4318");

@@ -4,6 +4,7 @@ namespace Utils;
 
 use Core\Observability\Log;
 use Core\Observability\Tracer;
+use Core\Tasks\Queue;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Monolog\LogRecord;
@@ -15,16 +16,23 @@ class Boot {
     public static function init() {
         self::initTracer();
         self::initLogger();
+        self::initJobs();
     }
 
     public static function close()
     {
+        Queue::get()->run();
+
         $span = Tracer::startSpan('Locking doors');
         usleep(5000);
         $span->end();
 
         Tracer::close();
         self::$otelLogProvider->shutdown();
+    }
+
+    private static function initJobs() {
+        Queue::setDefaultJobNamespace('Utils\\Jobs');
     }
 
     private  static function initTracer()

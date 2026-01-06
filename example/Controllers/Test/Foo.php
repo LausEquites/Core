@@ -1,6 +1,6 @@
 <?php
 
-namespace Controllers;
+namespace Controllers\Test;
 
 use Core\Controller;
 
