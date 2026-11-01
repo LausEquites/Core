@@ -1,0 +1,6 @@
+services:
+  web:
+    working_dir: /var/www/app
+    labels: !reset []
+    networks: !reset
+      - default

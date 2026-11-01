@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 include_once __DIR__ . "/../vendor/autoload.php";
 include "Controllers/Test/Foo.php";
-include "Controllers/Test/Test.php";
+include "Controllers/Test.php";
 include "Controllers/Test/Json.php";
 include "Controllers/Test/Wastetime.php";
 include "Controllers/Openapi.php";
