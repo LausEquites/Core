@@ -2,11 +2,10 @@
 
 namespace Core;
 
-use Carbon\Carbon;
 use Core\Exceptions\External;
 
 /**
- * Core\\ActiveRecord
+ * Core\ActiveRecord
  *
  * Lightweight Active Record base providing simple CRUD helpers and automatic mapping
  * between database rows and PHP objects. Subclasses should define:
@@ -14,7 +13,7 @@ use Core\Exceptions\External;
  * - protected static $_typeMap: array<string,string> — optional field=>type hints used for IO conversion.
  *
  * Supported types in $_typeMap when reading (createFromArray) and writing (save/bindParams):
- * - dt | datetime    => Carbon instance in UTC (stored as 'Y-m-d H:i:s').
+ * - dt | datetime    => Carbon/DateTime instance in UTC (stored as 'Y-m-d H:i:s').
  * - json             => stdClass decoded from JSON (and encoded on write).
  * - json-object      => same as json (object form).
  * - json-assoc       => associative array decoded from JSON.
@@ -26,12 +25,30 @@ use Core\Exceptions\External;
  * - save() performs INSERT for new records (no id) or UPDATE for existing ones (has id),
  *   only including modified fields.
  */
+#[\AllowDynamicProperties]
 class ActiveRecord
 {
+    /** @var string Database table name */
     protected static $_table;
-    protected static $_typeMap;
+
+    /** @var array<string, string> Field type mappings */
+    protected static $_typeMap = [];
+
+    /** @var array<string, bool> Map of modified field names */
     protected $_modified = [];
+
+    /** @var mixed Primary key ID */
     protected $id;
+
+    /**
+     * Obtain the PDO database connection.
+     *
+     * @return \PDO
+     */
+    protected static function getPdo()
+    {
+        return DB::get();
+    }
 
     /**
      * Fetch a single record by primary key id.
@@ -45,19 +62,21 @@ class ActiveRecord
      */
     protected static function getById($id)
     {
+        if ($id === null || $id === '') {
+            return false;
+        }
+
         $sql = "SELECT * FROM `" . static::$_table . "` WHERE id = :id";
-        $pdo = DB::get();
-        $stmt = $pdo->prepare($sql);
+        $stmt = static::getPdo()->prepare($sql);
 
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
 
-        $obj = false;
         if ($row) {
-            $obj = static::createFromArray($row);
+            return static::createFromArray($row);
         }
 
-        return $obj;
+        return false;
     }
 
     /**
@@ -69,17 +88,16 @@ class ActiveRecord
      */
     protected static function getByIdMulti($ids)
     {
-        if (!$ids) {
+        if (empty($ids)) {
             return [];
         }
 
-        $idCnt = count($ids);
-        $inData = str_repeat('?,',$idCnt);
-        $inData = mb_substr($inData,0, -1);
+        $normalizedIds = array_values($ids);
+        $placeholders = implode(',', array_fill(0, count($normalizedIds), '?'));
 
-        $sql = "SELECT * FROM `" . static::$_table . "` WHERE id IN($inData)";
-        $stmt = DB::get()->prepare($sql);
-        $stmt->execute($ids);
+        $sql = "SELECT * FROM `" . static::$_table . "` WHERE id IN ($placeholders)";
+        $stmt = static::getPdo()->prepare($sql);
+        $stmt->execute($normalizedIds);
 
         $objs = [];
         while ($data = $stmt->fetch()) {
@@ -103,7 +121,7 @@ class ActiveRecord
     {
         $objs = [];
 
-        $stmt = DB::get()->prepare($sql);
+        $stmt = static::getPdo()->prepare($sql);
         $stmt->execute($params);
 
         while ($data = $stmt->fetch()) {
@@ -127,11 +145,11 @@ class ActiveRecord
     {
         $objs = static::getBySql($sql, $params);
 
-        if (!$objs) {
+        if (empty($objs)) {
             return false;
         }
 
-        return reset ($objs);
+        return reset($objs);
     }
 
     /**
@@ -139,7 +157,7 @@ class ActiveRecord
      *
      * Only properties that exist on the subclass are assigned. If a field name
      * exists in static::$_typeMap, conversions are applied:
-     * - 'dt'/'datetime' => Carbon instance in UTC
+     * - 'dt'/'datetime' => Carbon/DateTime instance in UTC
      * - 'json'/'json-object' => json_decode to object (stdClass)
      * - 'json-assoc' => json_decode to associative array
      *
@@ -154,9 +172,9 @@ class ActiveRecord
                 $type = static::$_typeMap[$key] ?? null;
                 if ($value !== null) {
                     $value = match ($type) {
-                        'dt', 'datetime' => Carbon::createFromFormat("Y-m-d H:i:s", $value, 'UTC'),
-                        'json', 'json-object' => json_decode($value, flags: JSON_THROW_ON_ERROR),
-                        'json-assoc' => json_decode($value, true, flags: JSON_THROW_ON_ERROR),
+                        'dt', 'datetime' => self::hydrateDateTime($value),
+                        'json', 'json-object' => json_decode($value, false, 512, JSON_THROW_ON_ERROR),
+                        'json-assoc' => json_decode($value, true, 512, JSON_THROW_ON_ERROR),
                         default => $value
                     };
                 }
@@ -166,6 +184,25 @@ class ActiveRecord
         }
 
         return $obj;
+    }
+
+    /**
+     * Hydrate a datetime value into a Carbon or DateTime instance in UTC.
+     *
+     * @param mixed $value
+     * @return \DateTimeInterface
+     */
+    private static function hydrateDateTime($value)
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value;
+        }
+
+        if (class_exists('\Carbon\Carbon')) {
+            return \Carbon\Carbon::parse($value, 'UTC');
+        }
+
+        return new \DateTime($value, new \DateTimeZone('UTC'));
     }
 
     /**
@@ -200,45 +237,48 @@ class ActiveRecord
      */
     protected function save()
     {
-        if (!$this->_modified) {
+        if (empty($this->_modified)) {
             return true;
         }
 
-        $pdo = DB::get();
+        $pdo = static::getPdo();
         $updatedFields = array_keys($this->_modified);
+
         if ($this->id) {
-            $sql = "UPDATE `" . static::$_table . "` SET ";
-            $fields = [];
+            $updatedFields = array_values(array_diff($updatedFields, ['id']));
+            if (empty($updatedFields)) {
+                $this->_modified = [];
+                return true;
+            }
+
+            $fields = array_map(fn($f) => "`$f`=:$f", $updatedFields);
+            $sql = "UPDATE `" . static::$_table . "` SET " . implode(',', $fields) . " WHERE id = :id";
+
             $values = [];
             foreach ($updatedFields as $field) {
-                $fields[] = "`$field`=:$field";
                 $values[$field] = $this->$field;
             }
-            $sql .= implode(',', $fields);
-            $sql .= " WHERE id = :id";
             $values['id'] = $this->id;
         } else {
-            $sql = "INSERT INTO `" . static::$_table . "`";
-            $placeholders = [];
+            $columns = array_map(fn($f) => "`$f`", $updatedFields);
+            $placeholders = array_map(fn($f) => ":$f", $updatedFields);
+            $sql = "INSERT INTO `" . static::$_table . "` (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+
             $values = [];
             foreach ($updatedFields as $field) {
-                $placeholders[] = ":$field";
-                $values[$field] =  $this->$field;
+                $values[$field] = $this->$field;
             }
-            $escape = function(&$value) {
-                $value = "`$value`";
-            };
-            array_walk($updatedFields, $escape);
-            $sql .= "(" . implode(',', $updatedFields) . ") ";
-            $sql .= "VALUES (" . implode(',', $placeholders) . ")";
         }
 
         $stmt = $pdo->prepare($sql);
         $this->bindParams($stmt, $values);
         $suc = $stmt->execute();
 
-        if (!$this->id) {
-            $this->id = $pdo->lastInsertId();
+        if ($suc) {
+            if (!$this->id) {
+                $this->id = $pdo->lastInsertId();
+            }
+            $this->_modified = [];
         }
 
         return $suc;
@@ -249,7 +289,7 @@ class ActiveRecord
      *
      * Rules:
      * - null type: bind as-is (PDO will infer type).
-     * - 'dt': expects Carbon or null; converts to UTC 'Y-m-d H:i:s'.
+     * - 'dt', 'datetime': expects Carbon/DateTime or null; converts to UTC 'Y-m-d H:i:s'.
      * - 'bit': binds as integer (PDO::PARAM_INT), useful for tinyint/bit.
      * - 'json', 'json-assoc', 'json-object': json_encode before binding. Throws External on failure.
      * - booleans are normalized to ints 0/1 before any further handling.
@@ -266,30 +306,46 @@ class ActiveRecord
             if (is_bool($value)) {
                 $value = (int) $value;
             }
-            $type = static::$_typeMap[$field]?? null;
+
+            $type = static::$_typeMap[$field] ?? null;
             switch ($type) {
                 case null:
                     $stmt->bindValue(":$field", $value);
                     break;
                 case 'dt':
-                    if ($value !== null) {
-                        $value->setTimezone('UTC');
-                        $stmt->bindValue(":$field", $value->format('Y-m-d H:i:s'));
+                case 'datetime':
+                    if ($value instanceof \DateTimeInterface) {
+                        $dt = clone $value;
+                        if (method_exists($dt, 'setTimezone')) {
+                            $dt = $dt->setTimezone(new \DateTimeZone('UTC'));
+                        }
+                        $stmt->bindValue(":$field", $dt->format('Y-m-d H:i:s'));
+                    } elseif ($value !== null) {
+                        $stmt->bindValue(":$field", (string) $value);
                     } else {
-                        $stmt->bindValue(":$field", $value);
+                        $stmt->bindValue(":$field", null, \PDO::PARAM_NULL);
                     }
                     break;
                 case 'bit':
-                    $stmt->bindValue(":$field", (int)$value, \PDO::PARAM_INT);
+                    if ($value === null) {
+                        $stmt->bindValue(":$field", null, \PDO::PARAM_NULL);
+                    } else {
+                        $stmt->bindValue(":$field", (int) $value, \PDO::PARAM_INT);
+                    }
                     break;
                 case 'json':
                 case 'json-assoc':
                 case 'json-object':
-                    $value = json_encode($value);
-                    if ($value === false) {
-                        throw new External("Error converting $field to json", 500);
+                    if ($value === null) {
+                        $stmt->bindValue(":$field", null, \PDO::PARAM_NULL);
+                    } else {
+                        try {
+                            $encoded = json_encode($value, JSON_THROW_ON_ERROR);
+                            $stmt->bindValue(":$field", $encoded);
+                        } catch (\JsonException) {
+                            throw new External("Error converting $field to json", 500);
+                        }
                     }
-                    $stmt->bindValue(":$field", $value);
                     break;
                 default:
                     throw new \Exception("Unknown field type " . static::$_typeMap[$field] . " for $field");
