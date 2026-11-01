@@ -12,6 +12,10 @@ use ReflectionProperty;
 use stdClass;
 use Tests\Support\UnitTester;
 
+/**
+ * SQLite-based tests always run. MariaDB tests need DB_HOST, DB_NAME, DB_USER and DB_PASS
+ * in the environment (provided by docker-compose) and are skipped otherwise.
+ */
 final class DBCest
 {
     public function _before(UnitTester $I): void
@@ -33,6 +37,25 @@ final class DBCest
     private function setConfig(mixed $config): void
     {
         (new ReflectionProperty(Config::class, 'config'))->setValue(null, $config);
+    }
+
+    /**
+     * @return array{host: string, port: string|false, db: string, user: string, pass: string}
+     */
+    private function mariaDbEnv(UnitTester $I): array
+    {
+        $host = getenv('DB_HOST');
+        if (!$host) {
+            $I->markTestSkipped('DB_HOST not set; MariaDB tests need the docker-compose environment');
+        }
+
+        return [
+            'host' => $host,
+            'port' => getenv('DB_PORT'),
+            'db' => (string)getenv('DB_NAME'),
+            'user' => (string)getenv('DB_USER'),
+            'pass' => (string)getenv('DB_PASS'),
+        ];
     }
 
     public function testGetFromConfigWithDsnArray(UnitTester $I): void
@@ -149,5 +172,103 @@ final class DBCest
         $I->expectThrowable(PDOException::class, function () {
             DB::getFromConfig();
         });
+    }
+
+    public function testScalarDbConfigThrowsMissingKeys(UnitTester $I): void
+    {
+        $this->setConfig(['db' => 'mysql://localhost/app']);
+
+        $I->expectThrowable(new \Exception("DB config missing required keys: 'dsn' or ('host' and 'db')"), function () {
+            DB::getFromConfig();
+        });
+    }
+
+    public function testMariaDbConnectionFromParts(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $this->setConfig(['db' => $env]);
+
+        $pdo = DB::getFromConfig();
+
+        $I->assertEquals('mysql', $pdo->getAttribute(PDO::ATTR_DRIVER_NAME));
+        $I->assertEquals($env['db'], $pdo->query('SELECT DATABASE()')->fetchColumn());
+        $I->assertEquals('utf8mb4', $pdo->query('SELECT @@character_set_client')->fetchColumn());
+        $I->assertStringContainsStringIgnoringCase('mariadb', $pdo->query('SELECT VERSION()')->fetchColumn());
+    }
+
+    public function testMariaDbConnectionFromPartsObjectWithoutPort(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $db = new stdClass();
+        $db->host = $env['host'];
+        $db->db = $env['db'];
+        $db->user = $env['user'];
+        $db->pass = $env['pass'];
+        $config = new stdClass();
+        $config->db = $db;
+        $this->setConfig($config);
+
+        $pdo = DB::getFromConfig();
+
+        $I->assertEquals($env['db'], $pdo->query('SELECT DATABASE()')->fetchColumn());
+    }
+
+    public function testMariaDbPortIsUsed(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $this->setConfig(['db' => ['port' => 1] + $env]);
+
+        $I->expectThrowable(PDOException::class, function () {
+            DB::getFromConfig();
+        });
+    }
+
+    public function testMariaDbCustomCharset(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $this->setConfig(['db' => $env + ['charset' => 'latin1']]);
+
+        $pdo = DB::getFromConfig();
+
+        $I->assertEquals('latin1', $pdo->query('SELECT @@character_set_client')->fetchColumn());
+    }
+
+    public function testMariaDbConnectionFromDsn(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $this->setConfig(['db' => [
+            'dsn' => "mysql:host={$env['host']};dbname={$env['db']}",
+            'user' => $env['user'],
+            'pass' => $env['pass'],
+        ]]);
+
+        $pdo = DB::getFromConfig();
+
+        $I->assertEquals($env['db'], $pdo->query('SELECT DATABASE()')->fetchColumn());
+    }
+
+    public function testMariaDbWrongPasswordThrows(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $this->setConfig(['db' => ['pass' => 'wrong-password'] + $env]);
+
+        $I->expectThrowable(PDOException::class, function () {
+            DB::getFromConfig();
+        });
+    }
+
+    public function testMariaDbRoundTrip(UnitTester $I): void
+    {
+        $env = $this->mariaDbEnv($I);
+        $this->setConfig(['db' => $env]);
+
+        $pdo = DB::get();
+        $pdo->exec('CREATE TEMPORARY TABLE db_cest (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50))');
+        $pdo->prepare('INSERT INTO db_cest (name) VALUES (?)')->execute(['Æblegrød']);
+
+        $row = DB::get()->query('SELECT id, name FROM db_cest')->fetch(PDO::FETCH_ASSOC);
+
+        $I->assertEquals(1, $row['id']);
+        $I->assertEquals('Æblegrød', $row['name']);
     }
 }

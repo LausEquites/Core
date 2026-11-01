@@ -19,12 +19,39 @@ services:
       - "XDEBUG_MODE=develop,coverage"
       - "XDEBUG_DISCOVER_INCLUDE_FILES=1"
       - "XDEBUG_LOG=/dev/stdout"
+      - "DB_HOST=mariadb"
+      - "DB_PORT=3306"
+      - "DB_NAME=core_test"
+      - "DB_USER=core"
+      - "DB_PASS=core"
+    depends_on:
+      mariadb:
+        condition: service_healthy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.core.rule=Host(`core.localhost`)"
       - "traefik.http.routers.core.entrypoints=web"
+      - "traefik.docker.network=web"
     networks:
       - web
+      - default
+
+  mariadb:
+    image: mariadb:11
+    environment:
+      - "MARIADB_DATABASE=core_test"
+      - "MARIADB_USER=core"
+      - "MARIADB_PASSWORD=core"
+      - "MARIADB_ROOT_PASSWORD=root"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - default
 
 networks:
   web:

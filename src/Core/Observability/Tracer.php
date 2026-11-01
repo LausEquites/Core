@@ -91,11 +91,11 @@ class Tracer {
      * This method accesses the tracer items array and returns the value associated
      * with the 'rootSpan' key, which represents the root span in a tracing operation.
      *
-     * @return Span The root span object or value stored in the tracer items.
+     * @return Span|null The root span object, or null if the tracer has not been initialized.
      */
     public static function getRootSpan()
     {
-        return self::$tracerItems['rootSpan'];
+        return self::$tracerItems['rootSpan'] ?? null;
     }
 
     /**

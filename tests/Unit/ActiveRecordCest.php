@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use Carbon\Carbon;
 use Core\ActiveRecord;
+use Core\Config;
+use Core\DB;
 use Core\Exceptions\External;
 use PDO;
+use ReflectionProperty;
 use stdClass;
 use Tests\Support\UnitTester;
 
@@ -81,6 +85,63 @@ class TestRecord extends ActiveRecord
     public static function findBySqlSingle(string $sql, array $params = []): static|false
     {
         return static::getBySqlSingle($sql, $params);
+    }
+}
+
+/**
+ * Same table as TestRecord but stores meta as 'json-object'.
+ */
+class JsonObjectTestRecord extends TestRecord
+{
+    protected static $_typeMap = ['meta' => 'json-object'];
+}
+
+/**
+ * Hydrates datetime fields as plain DateTime even though Carbon is installed.
+ */
+class NoCarbonTestRecord extends TestRecord
+{
+    protected static function useCarbon()
+    {
+        return false;
+    }
+}
+
+/**
+ * Same table as TestRecord but with a type mapping ActiveRecord does not know.
+ */
+class UnknownTypeTestRecord extends TestRecord
+{
+    protected static $_typeMap = ['name' => 'unknown'];
+}
+
+/**
+ * Uses the default ActiveRecord::getPdo(), i.e. Core\DB::get().
+ */
+class DefaultPdoTestRecord extends ActiveRecord
+{
+    protected static $_table = 'test_records';
+
+    public mixed $name = null;
+
+    public function getId(): mixed
+    {
+        return $this->id;
+    }
+
+    public function testSet(string $field, mixed $value): void
+    {
+        $this->set($field, $value);
+    }
+
+    public function testSave(): bool
+    {
+        return $this->save();
+    }
+
+    public static function findById(mixed $id): static|false
+    {
+        return static::getById($id);
     }
 }
 
@@ -257,5 +318,209 @@ final class ActiveRecordCest
         $raw = $stmt->fetchColumn();
 
         $I->assertNull($raw, 'Null JSON value should be stored as SQL NULL, not "null" string');
+    }
+
+    private function fetchRaw(PDO $pdo, string $column, mixed $id): mixed
+    {
+        $stmt = $pdo->prepare("SELECT $column FROM test_records WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetchColumn();
+    }
+
+    public function testGetByIdWithEmptyIdReturnsFalse(UnitTester $I): void
+    {
+        TestRecord::$mockPdo = $this->createSqlitePdo();
+
+        $I->assertFalse(TestRecord::findById(null));
+        $I->assertFalse(TestRecord::findById(''));
+    }
+
+    public function testGetByIdNotFoundReturnsFalse(UnitTester $I): void
+    {
+        TestRecord::$mockPdo = $this->createSqlitePdo();
+
+        $I->assertFalse(TestRecord::findById(999));
+    }
+
+    public function testHydrationKeepsDateTimeInstances(UnitTester $I): void
+    {
+        $date = new \DateTimeImmutable('2026-01-01 12:00:00');
+
+        $record = TestRecord::createFromArray(['created_at' => $date]);
+
+        $I->assertSame($date, $record->created_at);
+    }
+
+    public function testHydrationUsesCarbonInUtc(UnitTester $I): void
+    {
+        $record = TestRecord::createFromArray(['created_at' => '2026-01-01 12:00:00']);
+
+        $I->assertInstanceOf(Carbon::class, $record->created_at);
+        $I->assertEquals('UTC', $record->created_at->getTimezone()->getName());
+        $I->assertEquals('2026-01-01 12:00:00', $record->created_at->format('Y-m-d H:i:s'));
+    }
+
+    public function testHydrationFallsBackToDateTimeWithoutCarbon(UnitTester $I): void
+    {
+        $record = NoCarbonTestRecord::createFromArray(['created_at' => '2026-01-01 12:00:00']);
+
+        $I->assertInstanceOf(\DateTime::class, $record->created_at);
+        $I->assertNotInstanceOf(Carbon::class, $record->created_at);
+        $I->assertEquals('UTC', $record->created_at->getTimezone()->getName());
+        $I->assertEquals('2026-01-01 12:00:00', $record->created_at->format('Y-m-d H:i:s'));
+    }
+
+    public function testSaveWithoutModificationsDoesNothing(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $record = new TestRecord();
+
+        $I->assertTrue($record->testSave());
+        $I->assertNull($record->getId());
+        $I->assertEquals(0, $pdo->query('SELECT COUNT(*) FROM test_records')->fetchColumn());
+    }
+
+    public function testUpdateWithOnlyIdModifiedSkipsQuery(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $record = new TestRecord();
+        $record->testSet('name', 'Original');
+        $record->testSave();
+        $id = $record->getId();
+
+        $record->name = 'Changed without set()';
+        $record->testSet('id', $id);
+
+        $I->assertTrue($record->testSave());
+        $I->assertEmpty($record->getModified());
+        $I->assertEquals('Original', TestRecord::findById($id)->name);
+    }
+
+    public function testSaveDateTimeConvertsToUtc(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $record = new TestRecord();
+        $record->testSet('created_at', new \DateTimeImmutable('2026-03-01 12:00:00', new \DateTimeZone('Europe/Copenhagen')));
+        $record->testSave();
+
+        $I->assertEquals('2026-03-01 11:00:00', $this->fetchRaw($pdo, 'created_at', $record->getId()));
+    }
+
+    public function testSaveDateTimeStringAndNull(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $record = new TestRecord();
+        $record->testSet('created_at', '2026-05-05 05:05:05');
+        $record->testSet('updated_at', null);
+        $record->testSave();
+
+        $I->assertEquals('2026-05-05 05:05:05', $this->fetchRaw($pdo, 'created_at', $record->getId()));
+        $I->assertNull($this->fetchRaw($pdo, 'updated_at', $record->getId()));
+    }
+
+    public function testSaveBitValues(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $active = new TestRecord();
+        $active->testSet('is_active', '1');
+        $active->testSave();
+
+        $inactive = new TestRecord();
+        $inactive->testSet('is_active', false);
+        $inactive->testSave();
+
+        $unknown = new TestRecord();
+        $unknown->testSet('is_active', null);
+        $unknown->testSave();
+
+        $I->assertSame(1, $this->fetchRaw($pdo, 'is_active', $active->getId()));
+        $I->assertSame(0, $this->fetchRaw($pdo, 'is_active', $inactive->getId()));
+        $I->assertNull($this->fetchRaw($pdo, 'is_active', $unknown->getId()));
+    }
+
+    public function testSaveJsonAssocRoundTrip(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $record = new TestRecord();
+        $record->testSet('tags', ['lang' => 'php', 'list' => [1, 2]]);
+        $record->testSave();
+
+        $I->assertEquals('{"lang":"php","list":[1,2]}', $this->fetchRaw($pdo, 'tags', $record->getId()));
+        $I->assertEquals(['lang' => 'php', 'list' => [1, 2]], TestRecord::findById($record->getId())->tags);
+    }
+
+    public function testSaveJsonObjectRoundTrip(UnitTester $I): void
+    {
+        $pdo = $this->createSqlitePdo();
+        TestRecord::$mockPdo = $pdo;
+
+        $meta = new stdClass();
+        $meta->role = 'editor';
+
+        $record = new JsonObjectTestRecord();
+        $record->testSet('meta', $meta);
+        $record->testSave();
+
+        $fetched = JsonObjectTestRecord::findById($record->getId());
+        $I->assertInstanceOf(stdClass::class, $fetched->meta);
+        $I->assertEquals('editor', $fetched->meta->role);
+    }
+
+    public function testSaveUnencodableJsonThrowsExternal(UnitTester $I): void
+    {
+        TestRecord::$mockPdo = $this->createSqlitePdo();
+
+        $record = new TestRecord();
+        $record->testSet('meta', ['value' => INF]);
+
+        $I->expectThrowable(new External('Error converting meta to json', 500), function () use ($record) {
+            $record->testSave();
+        });
+    }
+
+    public function testSaveUnknownTypeThrows(UnitTester $I): void
+    {
+        TestRecord::$mockPdo = $this->createSqlitePdo();
+
+        $record = new UnknownTypeTestRecord();
+        $record->testSet('name', 'Anything');
+
+        $I->expectThrowable(new \Exception('Unknown field type unknown for name'), function () use ($record) {
+            $record->testSave();
+        });
+    }
+
+    public function testDefaultPdoComesFromDb(UnitTester $I): void
+    {
+        $dbProperty = new ReflectionProperty(DB::class, 'db');
+        $configProperty = new ReflectionProperty(Config::class, 'config');
+        $configProperty->setValue(null, ['db' => ['dsn' => 'sqlite::memory:']]);
+        $dbProperty->setValue(null, null);
+
+        try {
+            DB::get()->exec('CREATE TABLE test_records (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)');
+
+            $record = new DefaultPdoTestRecord();
+            $record->testSet('name', 'Via DB');
+            $record->testSave();
+
+            $I->assertEquals('Via DB', DefaultPdoTestRecord::findById($record->getId())->name);
+        } finally {
+            $dbProperty->setValue(null, null);
+            $configProperty->setValue(null, []);
+        }
     }
 }

@@ -198,11 +198,23 @@ class ActiveRecord
             return $value;
         }
 
-        if (class_exists('\Carbon\Carbon')) {
+        if (static::useCarbon()) {
             return \Carbon\Carbon::parse($value, 'UTC');
         }
 
         return new \DateTime($value, new \DateTimeZone('UTC'));
+    }
+
+    /**
+     * Whether datetime fields are hydrated as Carbon instances.
+     *
+     * Defaults to true when Carbon is installed. Override in a subclass to force plain DateTime.
+     *
+     * @return bool
+     */
+    protected static function useCarbon()
+    {
+        return class_exists('\Carbon\Carbon');
     }
 
     /**
