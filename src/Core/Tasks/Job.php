@@ -17,7 +17,7 @@ class Job {
     {
         if (empty($type))
         {
-            throw new \Exception('Job type cannot be empty', ['params' => $parameters]);
+            throw new \Exception('Job type cannot be empty');
         }
 
         $job = new Job();
