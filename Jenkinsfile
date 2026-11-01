@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'docker-agent' }
+    agent { label 'docker' }
 
     options {
         disableConcurrentBuilds()
@@ -7,6 +7,23 @@ pipeline {
     }
 
     stages {
+        stage('Docker login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'gh-pat',
+                    usernameVariable: 'GHCR_USERNAME',
+                    passwordVariable: 'GHCR_TOKEN'
+                )]) {
+                    sh '''
+                        echo "$GHCR_TOKEN" |
+                            docker login ghcr.io \
+                                --username "$GHCR_USERNAME" \
+                                --password-stdin
+                    '''
+                }
+            }
+        }
+
         stage('Prepare') {
             steps {
                 script {
@@ -41,6 +58,7 @@ pipeline {
 
     post {
         always {
+            sh 'docker logout ghcr.io || true'
             script {
                 if (env.COMPOSE_PROJECT_NAME) {
                     sh '''
