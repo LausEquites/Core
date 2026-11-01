@@ -87,7 +87,10 @@ class Boot {
         $router->setNameSpace('Controllers');
         $router->run();
 
-        fastcgi_finish_request();
+        // Not available on PHP's built-in server (used by the functional tests)
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
         $rootSpan->addEvent('Content sent');
     }
 }

@@ -9,12 +9,6 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: *');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
-// Should not be in production
-if (file_exists(__DIR__ . "/../c3.php")) {
-    define('C3_CODECOVERAGE_ERROR_LOG_FILE', '/tmp/c3_error.log');
-    include __DIR__ . "/../c3.php";
-}
-
 include_once __DIR__ . "/../vendor/autoload.php";
 include "Controllers/Test/Foo.php";
 include "Controllers/Test/Test.php";
